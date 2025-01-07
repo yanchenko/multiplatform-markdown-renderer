@@ -23,6 +23,7 @@ fun Markdown(
     extendedSpans: MarkdownExtendedSpans = markdownExtendedSpans(),
     components: MarkdownComponents = markdownComponents(),
     animations: MarkdownAnimations = markdownAnimations(),
+    htmlStyler: HtmlStyler = htmlStyler(),
 ) = com.mikepenz.markdown.compose.Markdown(
     content = content,
     colors = colors,
@@ -36,4 +37,5 @@ fun Markdown(
     extendedSpans = extendedSpans,
     components = components,
     animations = animations,
+    htmlStyler = htmlStyler
 )

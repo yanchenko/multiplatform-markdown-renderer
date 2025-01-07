@@ -13,6 +13,8 @@ import androidx.compose.material.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.style.BaselineShift
 import androidx.compose.ui.unit.dp
 import com.mikepenz.markdown.coil3.Coil3ImageTransformerImpl
 import com.mikepenz.markdown.compose.extendedspans.ExtendedSpans
@@ -20,6 +22,7 @@ import com.mikepenz.markdown.compose.extendedspans.RoundedCornerSpanPainter
 import com.mikepenz.markdown.compose.extendedspans.SquigglyUnderlineSpanPainter
 import com.mikepenz.markdown.compose.extendedspans.rememberSquigglyUnderlineAnimator
 import com.mikepenz.markdown.m2.Markdown
+import com.mikepenz.markdown.model.htmlStyler
 import com.mikepenz.markdown.model.markdownExtendedSpans
 import com.mikepenz.markdown.ui.SampleTheme
 
@@ -75,6 +78,14 @@ fun MainLayout() {
                             )
                         }
                     },
+                    htmlStyler = htmlStyler(
+                        remember {
+                            mapOf(
+                                "sub" to SpanStyle(baselineShift = BaselineShift.Subscript),
+                                "sup" to SpanStyle(baselineShift = BaselineShift.Superscript)
+                            )::get
+                        }
+                    )
                 )
             }
             item {
@@ -104,6 +115,8 @@ private const val MARKDOWN = """
 This is a paragraph with some *italic* and **bold** text.
 
 This is a paragraph with some `inline code`.
+
+Text with <sub>sub</sub> and <sup>sup</sup>.
 
 This is a paragraph with a [link](https://www.jetbrains.com/).
 

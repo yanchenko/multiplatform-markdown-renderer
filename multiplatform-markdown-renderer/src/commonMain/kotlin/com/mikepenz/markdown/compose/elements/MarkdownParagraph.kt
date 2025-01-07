@@ -4,6 +4,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.buildAnnotatedString
+import com.mikepenz.markdown.compose.LocalHtmlStyler
 import com.mikepenz.markdown.compose.LocalMarkdownAnnotator
 import com.mikepenz.markdown.compose.LocalMarkdownTypography
 import com.mikepenz.markdown.utils.buildMarkdownAnnotatedString
@@ -19,11 +20,12 @@ fun MarkdownParagraph(
     style: TextStyle = LocalMarkdownTypography.current.paragraph,
 ) {
     val annotator = LocalMarkdownAnnotator.current
+    val htmlStyler = LocalHtmlStyler.current
     val linkTextSpanStyle = LocalMarkdownTypography.current.linkTextSpanStyle
     val codeSpanStyle = LocalMarkdownTypography.current.codeSpanStyle
     val styledText = buildAnnotatedString {
         pushStyle(style.toSpanStyle())
-        buildMarkdownAnnotatedString(content, node, linkTextSpanStyle, codeSpanStyle, annotator)
+        buildMarkdownAnnotatedString(content, node, linkTextSpanStyle, codeSpanStyle, annotator, htmlStyler)
         pop()
     }
 
