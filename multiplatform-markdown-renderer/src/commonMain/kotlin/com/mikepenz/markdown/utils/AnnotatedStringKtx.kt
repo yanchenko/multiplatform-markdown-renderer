@@ -2,6 +2,7 @@ package com.mikepenz.markdown.utils
 
 import androidx.compose.foundation.text.appendInlineContent
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.Immutable
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextStyle
@@ -9,8 +10,10 @@ import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
+import com.mikepenz.markdown.compose.LocalHtmlStyler
 import com.mikepenz.markdown.compose.LocalMarkdownAnnotator
 import com.mikepenz.markdown.compose.LocalMarkdownTypography
+import com.mikepenz.markdown.model.HtmlStyler
 import com.mikepenz.markdown.model.MarkdownAnnotator
 import org.intellij.markdown.MarkdownElementTypes
 import org.intellij.markdown.MarkdownTokenTypes
@@ -41,6 +44,7 @@ fun String.buildMarkdownAnnotatedString(
     codeSpanStyle: SpanStyle = style.toSpanStyle(),
     flavour: MarkdownFlavourDescriptor = GFMFlavourDescriptor(),
     annotator: MarkdownAnnotator? = null,
+    htmlStyler: HtmlStyler? = null,
 ): AnnotatedString {
     val content = this
     val parsedTree = MarkdownParser(flavour).buildMarkdownTreeFromString(content)
@@ -53,7 +57,8 @@ fun String.buildMarkdownAnnotatedString(
         style = style,
         linkTextSpanStyle = linkTextSpanStyle,
         codeSpanStyle = codeSpanStyle,
-        annotator = annotator
+        annotator = annotator,
+        htmlStyler = htmlStyler
     )
 }
 
@@ -76,9 +81,13 @@ fun String.buildMarkdownAnnotatedString(
     linkTextSpanStyle: SpanStyle = style.toSpanStyle(),
     codeSpanStyle: SpanStyle = style.toSpanStyle(),
     annotator: MarkdownAnnotator? = null,
+    htmlStyler: HtmlStyler? = null,
 ): AnnotatedString = buildAnnotatedString {
     pushStyle(style.toSpanStyle())
-    buildMarkdownAnnotatedString(this@buildMarkdownAnnotatedString, textNode, linkTextSpanStyle, codeSpanStyle, annotator)
+    buildMarkdownAnnotatedString(
+        this@buildMarkdownAnnotatedString,
+        textNode, linkTextSpanStyle, codeSpanStyle, annotator, htmlStyler
+    )
     pop()
 }
 
@@ -89,7 +98,8 @@ fun AnnotatedString.Builder.appendMarkdownLink(content: String, node: ASTNode) =
     node = node,
     linkTextStyle = LocalMarkdownTypography.current.linkTextSpanStyle,
     codeStyle = LocalMarkdownTypography.current.codeSpanStyle,
-    annotator = LocalMarkdownAnnotator.current
+    annotator = LocalMarkdownAnnotator.current,
+    htmlStyler = LocalHtmlStyler.current
 )
 
 /**
@@ -107,25 +117,31 @@ fun AnnotatedString.Builder.appendMarkdownLink(
     linkTextStyle: SpanStyle,
     codeStyle: SpanStyle,
     annotator: MarkdownAnnotator? = null,
+    htmlStyler: HtmlStyler? = null,
 ) {
     val linkText = node.findChildOfType(MarkdownElementTypes.LINK_TEXT)?.children?.innerList()
     if (linkText == null) {
         append(node.getUnescapedTextInNode(content))
         return
     }
-    val destination = node.findChildOfType(MarkdownElementTypes.LINK_DESTINATION)?.getUnescapedTextInNode(content)
-    val linkLabel = node.findChildOfType(MarkdownElementTypes.LINK_LABEL)?.getUnescapedTextInNode(content)
+    val destination =
+        node.findChildOfType(MarkdownElementTypes.LINK_DESTINATION)?.getUnescapedTextInNode(content)
+    val linkLabel =
+        node.findChildOfType(MarkdownElementTypes.LINK_LABEL)?.getUnescapedTextInNode(content)
     val annotation = destination ?: linkLabel
     if (annotation != null) pushStringAnnotation(MARKDOWN_TAG_URL, annotation)
     pushStyle(linkTextStyle)
-    buildMarkdownAnnotatedString(content, linkText, linkTextStyle, codeStyle, annotator)
+    buildMarkdownAnnotatedString(content, linkText, linkTextStyle, codeStyle, annotator, htmlStyler)
     pop()
     if (annotation != null) pop()
 }
 
 @Deprecated(
     "Use the non composable `appendAutoLink` function instead. This function will be removed in a future release.",
-    ReplaceWith("appendAutoLink(content, node, LocalMarkdownTypography.current.linkTextSpanStyle)", "com.mikepenz.markdown.compose.LocalMarkdownTypography")
+    ReplaceWith(
+        "appendAutoLink(content, node, LocalMarkdownTypography.current.linkTextSpanStyle)",
+        "com.mikepenz.markdown.compose.LocalMarkdownTypography"
+    )
 )
 @Composable
 fun AnnotatedString.Builder.appendAutoLink(content: String, node: ASTNode) {
@@ -156,13 +172,15 @@ fun AnnotatedString.Builder.appendAutoLink(
 
 @Deprecated("Use the non composable `buildMarkdownAnnotatedString` function instead. This function will be removed in a future release.")
 @Composable
-fun AnnotatedString.Builder.buildMarkdownAnnotatedString(content: String, node: ASTNode) = buildMarkdownAnnotatedString(
-    content = content,
-    node = node,
-    linkTextStyle = LocalMarkdownTypography.current.linkTextSpanStyle,
-    codeStyle = LocalMarkdownTypography.current.codeSpanStyle,
-    annotator = LocalMarkdownAnnotator.current
-)
+fun AnnotatedString.Builder.buildMarkdownAnnotatedString(content: String, node: ASTNode) =
+    buildMarkdownAnnotatedString(
+        content = content,
+        node = node,
+        linkTextStyle = LocalMarkdownTypography.current.linkTextSpanStyle,
+        codeStyle = LocalMarkdownTypography.current.codeSpanStyle,
+        annotator = LocalMarkdownAnnotator.current,
+        htmlStyler = LocalHtmlStyler.current
+    )
 
 /**
  * Builds an [AnnotatedString] with the contents of the given Markdown [ASTNode] node.
@@ -179,19 +197,29 @@ fun AnnotatedString.Builder.buildMarkdownAnnotatedString(
     linkTextStyle: SpanStyle,
     codeStyle: SpanStyle,
     annotator: MarkdownAnnotator? = null,
+    htmlStyler: HtmlStyler? = null,
 ) {
-    buildMarkdownAnnotatedString(content, node.children, linkTextStyle, codeStyle, annotator)
+    buildMarkdownAnnotatedString(
+        content,
+        node.children,
+        linkTextStyle,
+        codeStyle,
+        annotator,
+        htmlStyler
+    )
 }
 
 @Deprecated("Use the non composable `buildMarkdownAnnotatedString` function instead. This function will be removed in a future release.")
 @Composable
-fun AnnotatedString.Builder.buildMarkdownAnnotatedString(content: String, children: List<ASTNode>) = buildMarkdownAnnotatedString(
-    content = content,
-    children = children,
-    linkTextStyle = LocalMarkdownTypography.current.linkTextSpanStyle,
-    codeStyle = LocalMarkdownTypography.current.codeSpanStyle,
-    annotator = LocalMarkdownAnnotator.current
-)
+fun AnnotatedString.Builder.buildMarkdownAnnotatedString(content: String, children: List<ASTNode>) =
+    buildMarkdownAnnotatedString(
+        content = content,
+        children = children,
+        linkTextStyle = LocalMarkdownTypography.current.linkTextSpanStyle,
+        codeStyle = LocalMarkdownTypography.current.codeSpanStyle,
+        annotator = LocalMarkdownAnnotator.current,
+        htmlStyler = LocalHtmlStyler.current
+    )
 
 /**
  * Builds an [AnnotatedString] with the contents of the given Markdown [ASTNode] node.
@@ -208,6 +236,7 @@ fun AnnotatedString.Builder.buildMarkdownAnnotatedString(
     linkTextStyle: SpanStyle,
     codeStyle: SpanStyle,
     annotator: MarkdownAnnotator? = null,
+    htmlStyler: HtmlStyler? = null,
 ) {
     val annotate = annotator?.annotate
     var skipIfNext: Any? = null
@@ -215,46 +244,80 @@ fun AnnotatedString.Builder.buildMarkdownAnnotatedString(
         if (skipIfNext == null || skipIfNext != child.type) {
             if (annotate == null || !annotate(content, child)) {
                 val parentType = child.parent?.type
-
                 when (child.type) {
                     // Element types
-                    MarkdownElementTypes.PARAGRAPH -> buildMarkdownAnnotatedString(content, child, linkTextStyle, codeStyle, annotator)
+                    MarkdownElementTypes.PARAGRAPH ->
+                        buildMarkdownAnnotatedString(
+                            content,
+                            child, linkTextStyle, codeStyle, annotator, htmlStyler
+                        )
+
                     MarkdownElementTypes.IMAGE -> child.findChildOfTypeRecursive(
                         MarkdownElementTypes.LINK_DESTINATION
                     )?.let {
-                        appendInlineContent(MARKDOWN_TAG_IMAGE_URL, it.getUnescapedTextInNode(content))
+                        appendInlineContent(
+                            MARKDOWN_TAG_IMAGE_URL,
+                            it.getUnescapedTextInNode(content)
+                        )
                     }
 
                     MarkdownElementTypes.EMPH -> {
                         pushStyle(SpanStyle(fontStyle = FontStyle.Italic))
-                        buildMarkdownAnnotatedString(content, child, linkTextStyle, codeStyle, annotator)
+                        buildMarkdownAnnotatedString(
+                            content,
+                            child, linkTextStyle, codeStyle, annotator, htmlStyler
+                        )
                         pop()
                     }
 
                     MarkdownElementTypes.STRONG -> {
                         pushStyle(SpanStyle(fontWeight = FontWeight.Bold))
-                        buildMarkdownAnnotatedString(content, child, linkTextStyle, codeStyle, annotator)
+                        buildMarkdownAnnotatedString(
+                            content,
+                            child, linkTextStyle, codeStyle, annotator, htmlStyler
+                        )
                         pop()
                     }
 
                     GFMElementTypes.STRIKETHROUGH -> {
                         pushStyle(SpanStyle(textDecoration = TextDecoration.LineThrough))
-                        buildMarkdownAnnotatedString(content, child, linkTextStyle, codeStyle, annotator)
+                        buildMarkdownAnnotatedString(
+                            content,
+                            child, linkTextStyle, codeStyle, annotator, htmlStyler
+                        )
                         pop()
                     }
 
                     MarkdownElementTypes.CODE_SPAN -> {
                         pushStyle(codeStyle)
                         append(' ')
-                        buildMarkdownAnnotatedString(content, child.children.innerList(), linkTextStyle, codeStyle, annotator)
+                        buildMarkdownAnnotatedString(
+                            content,
+                            child.children.innerList(),
+                            linkTextStyle,
+                            codeStyle,
+                            annotator,
+                            htmlStyler
+                        )
                         append(' ')
                         pop()
                     }
 
                     MarkdownElementTypes.AUTOLINK -> appendAutoLink(content, child, linkTextStyle)
-                    MarkdownElementTypes.INLINE_LINK -> appendMarkdownLink(content, child, linkTextStyle, codeStyle, annotator)
-                    MarkdownElementTypes.SHORT_REFERENCE_LINK -> appendMarkdownLink(content, child, linkTextStyle, codeStyle, annotator)
-                    MarkdownElementTypes.FULL_REFERENCE_LINK -> appendMarkdownLink(content, child, linkTextStyle, codeStyle, annotator)
+                    MarkdownElementTypes.INLINE_LINK -> appendMarkdownLink(
+                        content,
+                        child, linkTextStyle, codeStyle, annotator, htmlStyler
+                    )
+
+                    MarkdownElementTypes.SHORT_REFERENCE_LINK -> appendMarkdownLink(
+                        content,
+                        child, linkTextStyle, codeStyle, annotator, htmlStyler
+                    )
+
+                    MarkdownElementTypes.FULL_REFERENCE_LINK -> appendMarkdownLink(
+                        content,
+                        child, linkTextStyle, codeStyle, annotator, htmlStyler
+                    )
 
                     // Token Types
                     MarkdownTokenTypes.TEXT -> append(child.getUnescapedTextInNode(content))
@@ -274,7 +337,10 @@ fun AnnotatedString.Builder.buildMarkdownAnnotatedString(
                     MarkdownTokenTypes.EXCLAMATION_MARK -> append('!')
                     MarkdownTokenTypes.BACKTICK -> append('`')
                     MarkdownTokenTypes.HARD_LINE_BREAK -> append("\n\n")
-                    MarkdownTokenTypes.EMPH -> if (parentType != MarkdownElementTypes.EMPH && parentType != MarkdownElementTypes.STRONG) append('*')
+                    MarkdownTokenTypes.EMPH -> if (parentType != MarkdownElementTypes.EMPH && parentType != MarkdownElementTypes.STRONG) append(
+                        '*'
+                    )
+
                     MarkdownTokenTypes.EOL -> append('\n')
                     MarkdownTokenTypes.WHITE_SPACE -> if (length > 0) {
                         append(' ')

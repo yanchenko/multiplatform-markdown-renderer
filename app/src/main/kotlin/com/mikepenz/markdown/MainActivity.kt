@@ -75,6 +75,7 @@ fun MainLayout() {
                             )
                         }
                     },
+                    annotator = subSupAnnotator(),
                 )
             }
             item {
@@ -104,6 +105,8 @@ private const val MARKDOWN = """
 This is a paragraph with some *italic* and **bold** text.
 
 This is a paragraph with some `inline code`.
+
+Text with <sub>sub<sub>sub</sub></sub> and <sup>sup<sup>sup<sub>sub</sub></sup></sup>.
 
 This is a paragraph with a [link](https://www.jetbrains.com/).
 

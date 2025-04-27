@@ -77,6 +77,13 @@ val LocalMarkdownExtendedSpans = compositionLocalOf<MarkdownExtendedSpans> {
 }
 
 /**
+ * Local [HtmlStyler] provider
+ */
+val LocalHtmlStyler = compositionLocalOf<HtmlStyler> {
+    return@compositionLocalOf DefaultHtmlStyler(null)
+}
+
+/**
  * Local [MarkdownComponents] provider
  */
 val LocalMarkdownComponents = compositionLocalOf<MarkdownComponents> {
